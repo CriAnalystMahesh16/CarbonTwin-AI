@@ -1,0 +1,6 @@
+{
+  "name": "CarbonTwin AI",
+  "description": "An AI-powered Carbon Digital Twin Engine that helps individuals understand, track, and reduce their carbon footprint through personalized insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

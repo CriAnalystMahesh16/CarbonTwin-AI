@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information and settings",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Unique user account ID"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Registered email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Profile creation timestamp"
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "CarbonTwinState": {
+      "title": "CarbonTwinState",
+      "description": "Inputs and analyzed output for a specific timestamp of the user's Carbon Twin",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique state entry ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the owner user profile ID"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of this snapshot"
+        },
+        "inputs": {
+          "type": "object",
+          "description": "User lifestyle inputs"
+        },
+        "analysis": {
+          "type": "object",
+          "description": "Generated analysis results from Gemini AI"
+        }
+      },
+      "required": ["id", "userId", "createdAt", "inputs", "analysis"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores core account schemas for each authenticated user"
+    },
+    "/users/{userId}/twins/{twinId}": {
+      "schema": "CarbonTwinState",
+      "description": "Chronological history of the user's Carbon Twin snapshots"
+    }
+  }
+}
