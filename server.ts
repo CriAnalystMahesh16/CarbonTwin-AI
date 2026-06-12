@@ -3,6 +3,8 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
+import { rateLimit } from "express-rate-limit";
+import { z } from "zod";
 
 dotenv.config();
 
@@ -30,33 +32,89 @@ function getGeminiClient() {
   return aiClient;
 }
 
+// Rigorous open-form input string sanitizer to clean out scripts and tags
+function sanitizeInputString(value: string): string {
+  if (typeof value !== "string") return "";
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/\//g, "&#x2F;")
+    .replace(/`/g, "&#x60;")
+    .trim();
+}
+
+// Strictly structured validation schema mapping directly to UserInputs interface
+const carbonTwinInputSchema = z.object({
+  transportation: z.enum(["car", "bike", "bus", "metro", "walking"]),
+  carMileage: z.number().nonnegative().max(100000).optional().nullable(),
+  carType: z.enum(["gas", "diesel", "hybrid", "electric"]).optional().nullable(),
+  domesticFlights: z.number().nonnegative().int().max(150),
+  internationalFlights: z.number().nonnegative().int().max(150),
+  flightClass: z.enum(["economy", "business", "first"]),
+  foodDiet: z.enum(["vegetarian", "vegan", "mixed", "non-vegetarian"]),
+  electricityUsage: z.number().nonnegative().max(10000),
+  acUsage: z.enum(["low", "medium", "high"]),
+  applianceUsage: z.enum(["efficient", "standard", "high-demand"]),
+  shoppingLevel: z.enum(["low", "medium", "high"]),
+  lifestyleGoals: z.array(z.string().max(100)).min(1).max(10),
+});
+
 async function startServer() {
   const app = express();
-  app.use(express.json());
+  
+  // Enforce rigid payload size limits to mitigate large-JSON buffer exploitation DoS
+  app.use(express.json({ limit: "15kb" }));
+
+  // Request Rate Limiting / API Throttling specifically targeting the full stack API routes
+  const apiRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 60,                // Maximum 60 API requests per IP every 15 minutes
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: {
+      error: "Too many requests from this IP. Rate limit exceeded. Please wait 15 minutes before retrying.",
+    },
+  });
+
+  // Apply rate limiter to all api routes
+  app.use("/api/", apiRateLimiter);
 
   // API Route: Analyze carbon twin inputs
   app.post("/api/carbon-twin/analyze", async (req, res) => {
     try {
-      const inputs = req.body;
-      if (!inputs) {
-        return res.status(400).json({ error: "Missing user inputs payload." });
+      // Validate incoming payload with strict Zod parsing
+      const validationResult = carbonTwinInputSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        // Return structured, clean, non-leaking error descriptions
+        return res.status(400).json({
+          error: "Strict validation check failed. Invalid payload formatting.",
+          details: validationResult.error.format(),
+        });
       }
 
-      // Default fallback calculations or prompt building
+      const inputs = validationResult.data;
+
+      // Unpack, apply defaults, and run deep sanitization on open-form strings
       const {
-        transportation = "car",
+        transportation,
         carMileage = 10000,
         carType = "gas",
-        domesticFlights = 2,
-        internationalFlights = 1,
-        flightClass = "economy",
-        foodDiet = "mixed",
-        electricityUsage = 300,
-        acUsage = "medium",
-        applianceUsage = "standard",
-        shoppingLevel = "medium",
-        lifestyleGoals = ["reduce_emissions"]
+        domesticFlights,
+        internationalFlights,
+        flightClass,
+        foodDiet,
+        electricityUsage,
+        acUsage,
+        applianceUsage,
+        shoppingLevel,
+        lifestyleGoals,
       } = inputs;
+
+      // Sanitize the potential open-ended goals list to prevent prompt / output injection vectors
+      const sanitizedGoals = lifestyleGoals.map(sanitizeInputString);
 
       const ai = getGeminiClient();
 
@@ -88,7 +146,7 @@ USER LIFESTYLE HIGHLIGHTS:
 - Food Diet: ${foodDiet}
 - Home Energy: Electricity consumption equivalent to ~${electricityUsage} kWh/month with AC usage estimated as "${acUsage}" and appliances as "${applianceUsage}"
 - Shopping Level: ${shoppingLevel}
-- Stated Lifestyle Goals: ${JSON.stringify(lifestyleGoals)}
+- Stated Lifestyle Goals: ${JSON.stringify(sanitizedGoals)}
 
 Based on this, return the Carbon Twin analysis structure. Evaluate the highest impact actions according to the decision-making logic.`;
 

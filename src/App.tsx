@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import confetti from "canvas-confetti";
 import { motion } from "motion/react";
 import { AuthScreen } from "./components/AuthScreen";
@@ -11,6 +11,9 @@ import {
   BookOpen, HelpCircle, Zap, Car, Plane, Award, Activity, Save, RefreshCw, Sparkles, PlusCircle, CheckSquare, Dumbbell, Github
 } from "lucide-react";
 import { UserInputs, CarbonTwinOutput, CarbonTwinState, Recommendation } from "./types";
+import { generateLocalTwinAnalysis, calculateSimulatedResults } from "./lib/carbonCompute";
+import { DashboardView } from "./components/dashboard/DashboardView";
+import { SimulatorView } from "./components/dashboard/SimulatorView";
 
 // Standard mock initial twin result to guarantee immediate rich visual rendering on first boot or in offline demo mode
 const DEFAULT_ANALYSED_TWIN: CarbonTwinOutput = {
@@ -350,104 +353,8 @@ export default function App() {
 
   // Simple local deterministic backup model so app always renders gorgeous graphs even during network/key limits
   const generateLocalAnalyzedEstimate = (inputs: UserInputs) => {
-    let score = 30;
-    let transportEm = 1200;
-    let flightsEm = (inputs.domesticFlights * 200) + (inputs.internationalFlights * 1300);
-    
-    if (inputs.flightClass === "business") flightsEm *= 3;
-    if (inputs.flightClass === "first") flightsEm *= 4;
-
-    if (inputs.transportation === "car") {
-      const mileage = inputs.carMileage || 12000;
-      if (inputs.carType === "gas") {
-        transportEm = mileage * 0.35;
-        score += 30;
-      } else if (inputs.carType === "diesel") {
-        transportEm = mileage * 0.3060;
-        score += 25;
-      } else if (inputs.carType === "hybrid") {
-        transportEm = mileage * 0.18;
-        score += 15;
-      } else if (inputs.carType === "electric") {
-        transportEm = mileage * 0.08;
-        score += 6;
-      }
-    } else if (inputs.transportation === "bike") {
-      transportEm = 0;
-      score -= 10;
-    } else {
-      transportEm = 400; // bus / metro
-      score += 5;
-    }
-
-    let foodEm = 1800;
-    if (inputs.foodDiet === "vegan") { foodEm = 750; score -= 8; }
-    else if (inputs.foodDiet === "vegetarian") { foodEm = 1100; score -= 4; }
-    else if (inputs.foodDiet === "non-vegetarian") { foodEm = 2500; score += 20; }
-
-    let energyEm = inputs.electricityUsage * 5;
-    if (energyEm > 3000) score += 15;
-    else if (energyEm < 1000) score -= 5;
-
-    let shoppingEm = 1500;
-    if (inputs.shoppingLevel === "high") { shoppingEm = 3800; score += 15; }
-    else if (inputs.shoppingLevel === "low") { shoppingEm = 600; score -= 5; }
-
-    const totalCO2 = Math.round(transportEm + flightsEm + foodEm + energyEm + shoppingEm);
-    const finalScore = Math.min(Math.max(Math.round(score + (totalCO2 / 180)), 8), 98);
-
-    const breakdown = {
-      transportation: Math.round(transportEm),
-      flights: Math.round(flightsEm),
-      food: Math.round(foodEm),
-      energy: Math.round(energyEm),
-      shopping: Math.round(shoppingEm)
-    };
-
-    const risk = finalScore > 75 ? "Critical" : finalScore > 50 ? "High" : finalScore > 30 ? "Medium" : "Low";
-
-    let personality = "Conscious Consumer";
-    if (inputs.domesticFlights + inputs.internationalFlights > 5) personality = "High-Flyer Traveler";
-    else if (inputs.transportation === "car" && (inputs.carMileage || 0) > 15000) personality = "Road Warrior";
-    else if (inputs.transportation === "bike" || inputs.transportation === "walking") personality = "Green Commuter";
-    else if (energyEm > 4000) personality = "Power Grid Giant";
-
-    const customRecs: Recommendation[] = [
-      {
-        actionName: `Adopt ${inputs.foodDiet === "vegan" ? "Local Seasonals" : "Plant-based alternatives"}`,
-        co2Reduction: "480 kg CO2e/year",
-        monetarySavings: "$120/year",
-        easeOfImplementation: "easy",
-        whySelected: "Reduces bovine agricultural methane footprint.",
-        expectedImpactDescription: "Primary diet footprints decrease exponentially.",
-        implementationStep: "Focus on bean spreads, organic lentils, and soy substitutes."
-      },
-      {
-        actionName: "Offset flight footprint using Gold-Standard offsets",
-        co2Reduction: "600 kg CO2e/year",
-        monetarySavings: "$0/year",
-        easeOfImplementation: "easy",
-        whySelected: "Air transit accounts for a heavy subtotal of emissions.",
-        expectedImpactDescription: "Direct project offset funding.",
-        implementationStep: "Verify airline offset packages next time you reserve tickets."
-      }
-    ];
-
-    setTwinAnalysis({
-      carbonPersonality: personality,
-      carbonScore: finalScore,
-      riskLevel: risk as any,
-      topEmissionSources: Object.keys(breakdown).slice(0, 2),
-      forecast30Days: `${Math.round(totalCO2 / 12)} kg CO2e`,
-      forecast90Days: `${Math.round(totalCO2 / 4)} kg CO2e`,
-      annualProjection: `${totalCO2.toLocaleString()} kg CO2e`,
-      topRecommendation: "Adopt vegetable alternates and cut auxiliary power",
-      carbonReductionPotential: "1,080 kg CO2e/year",
-      estimatedMoneySaved: "$120/year",
-      explanation: "Fallback Sandbox Model calculated locally because server connection limits are active. Still fully interactive and persistent!",
-      emissionBreakdown: breakdown,
-      recommendations: customRecs
-    });
+    const analysis = generateLocalTwinAnalysis(inputs);
+    setTwinAnalysis(analysis);
   };
 
   // Toggle active simulated commitment to watch Dashboard numbers drop live!
@@ -459,44 +366,9 @@ export default function App() {
   };
 
   // Recalculating simulated projections based on commits
-  const getSimulatedMetrics = () => {
-    let baseScore = twinAnalysis.carbonScore;
-    
-    // Parse base annual projection number
-    const baseAnnualStr = twinAnalysis.annualProjection.replace(/,/g, "");
-    const baseAnnualMatch = baseAnnualStr.match(/\d+/);
-    let baseAnnual = baseAnnualMatch ? Number(baseAnnualMatch[0]) : 3000;
-
-    let cumulativeReduction = 0;
-    let cumulativeSavings = 0;
-
-    // Sum reduction from committed actions
-    twinAnalysis.recommendations.forEach((rec, idx) => {
-      if (simulatedActions[idx]) {
-        // Reductions
-        const co2Match = rec.co2Reduction.replace(/,/g, "").match(/\d+/);
-        if (co2Match) cumulativeReduction += Number(co2Match[0]);
-
-        // Savings
-        const cashMatch = rec.monetarySavings.replace(/[^0-9]/g, "");
-        if (cashMatch) cumulativeSavings += Number(cashMatch);
-      }
-    });
-
-    // Derive simulated points (roughly 1 point per 80kg of savings)
-    const scoreDeduction = Math.round(cumulativeReduction / 80);
-    const simulatedScore = Math.max(baseScore - scoreDeduction, 5);
-    const simulatedAnnual = Math.max(baseAnnual - cumulativeReduction, 0);
-
-    return {
-      score: simulatedScore,
-      annual: simulatedAnnual,
-      reductionKg: cumulativeReduction,
-      savingsCash: cumulativeSavings
-    };
-  };
-
-  const simulatedResults = getSimulatedMetrics();
+  const simulatedResults = useMemo(() => {
+    return calculateSimulatedResults(twinAnalysis, simulatedActions);
+  }, [twinAnalysis, simulatedActions]);
 
   // Save the current state of inputs and analysis as a historical snapshot
   const handleSaveSnapshot = async () => {
@@ -815,485 +687,18 @@ export default function App() {
             </div>
           </div>
         )}
-
         {/* TAB 1: ACTIVE DIGITAL TWIN DASHBOARD */}
         {activeTab === "dashboard" && (
-          <motion.div 
-            className="space-y-8"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: {},
-              visible: {
-                transition: {
-                  staggerChildren: 0.05
-                }
-              }
-            }}
-          >
-            
-            {/* TOP DIAGNOSIS GRID: 12 COLUMNS */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              
-              {/* LEFT COLUMN: PERSONALITY CARD & CARBON SCORE (spans 4 columns) */}
-              <div className="lg:col-span-4 space-y-8">
-                
-                {/* CARD A: PERSONALITY CARD */}
-                <motion.div 
-                  variants={cardVariants}
-                  className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative overflow-hidden group shadow-md"
-                >
-                  <div className="absolute right-3 top-3 opacity-[0.04] text-emerald-500 pointer-events-none">
-                    <Leaf className="w-36 h-36" />
-                  </div>
-                  
-                  <div className="space-y-3 z-10 relative">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-emerald-500 uppercase tracking-widest font-black">Carbon Personality</span>
-                      <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold bg-slate-950 text-emerald-400 border border-slate-800">
-                        Twin Active
-                      </span>
-                    </div>
-                    <h3 className="font-display font-bold text-3xl text-white tracking-tight">
-                      {twinAnalysis.carbonPersonality}
-                    </h3>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Identified based on travel frequencies and energy coefficients.
-                    </p>
-
-                    <div className="flex gap-2 flex-wrap pt-2">
-                      <span className="px-2.5 py-1 bg-slate-950 rounded text-[10px] font-mono text-slate-300 border border-slate-800">
-                        Diet: {userInputs.foodDiet}
-                      </span>
-                      <span className="px-2.5 py-1 bg-slate-950 rounded text-[10px] font-mono text-slate-300 border border-slate-800">
-                        Transit: {userInputs.transportation}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-slate-500 uppercase block font-medium">Lifestyle Risk</span>
-                      <span className={`text-xs font-bold ${
-                        twinAnalysis.riskLevel === "Critical" ? "text-rose-500" :
-                        twinAnalysis.riskLevel === "High" ? "text-amber-500" :
-                        "text-emerald-400"
-                      }`}>
-                        ● {twinAnalysis.riskLevel} Emission
-                      </span>
-                    </div>
-                    <div className="p-2 bg-slate-950 rounded-xl border border-slate-800 text-slate-400">
-                      <Award className="w-4 h-4 text-emerald-400" />
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* CARD B: SCORE CARD (LIVE SIMULATOR) */}
-                <motion.div 
-                  variants={cardVariants}
-                  className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden shadow-md"
-                >
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" /> Realtime Simulator Loop
-                  </div>
-
-                  <div className="mt-8 relative flex items-center justify-center shrink-0 w-44 h-44">
-                    {/* Inner SVG with 88 radius and 80 cx */}
-                    <svg className="w-44 h-44 transform -rotate-90">
-                      <circle
-                        cx="88"
-                        cy="88"
-                        r="80"
-                        className="stroke-slate-800 fill-none"
-                        strokeWidth="12"
-                      />
-                      <circle
-                        cx="88"
-                        cy="88"
-                        r="80"
-                        className="stroke-emerald-500 fill-none transition-all duration-1000 ease-out"
-                        strokeWidth="12"
-                        strokeDasharray="502"
-                        strokeDashoffset={502 - (502 * (simulatedResults.score)) / 100}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    {/* Center values */}
-                    <div className="absolute text-center">
-                      <span className="text-5xl font-display font-black text-white block tracking-tight leading-none">
-                        {simulatedResults.score}
-                      </span>
-                      <span className="text-[10px] uppercase text-slate-500 font-bold tracking-wider block mt-1.5">
-                        Intensity Score
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Simulated Deltas description */}
-                  <div className="w-full mt-6 space-y-4">
-                    <div className="text-center">
-                      <h4 className="text-xs font-semibold uppercase text-slate-300 tracking-wider mb-1">
-                        Twin Carbon Health Index
-                      </h4>
-                      <p className="text-[11px] text-slate-400 leading-normal">
-                        Target 0 (net zero) and reduce from 100. Commit recommended mitigations in the simulation center below to see this score lower!
-                      </p>
-                    </div>
-
-                    {/* Progress risk indicator below */}
-                    <div className="pt-2 border-t border-slate-850">
-                      <div className="flex justify-between text-[11px] font-bold mb-1.5">
-                        <span className="text-slate-500 uppercase tracking-tighter">Emission Status</span>
-                        <span className={
-                          twinAnalysis.riskLevel === "Critical" ? "text-rose-500" :
-                          twinAnalysis.riskLevel === "High" ? "text-amber-500" :
-                          "text-emerald-400"
-                        }>● {twinAnalysis.riskLevel} Risk</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-1000 ${
-                            twinAnalysis.riskLevel === "Critical" ? "bg-rose-500" :
-                            twinAnalysis.riskLevel === "High" ? "bg-amber-500" :
-                            "bg-emerald-500"
-                          }`}
-                          style={{ 
-                            width: twinAnalysis.riskLevel === "Critical" ? "95%" : 
-                                   twinAnalysis.riskLevel === "High" ? "75%" : 
-                                   twinAnalysis.riskLevel === "Medium" ? "50%" : "25%" 
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {simulatedResults.reductionKg > 0 && (
-                      <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl space-y-1 animate-fadeIn text-center">
-                        <span className="text-[10px] text-emerald-400 uppercase font-black block tracking-widest">Active Reduction Commits</span>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-white font-medium flex items-center gap-1">
-                            <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
-                            -{simulatedResults.reductionKg} kg CO2e
-                          </span>
-                          <span className="text-emerald-400 font-bold">
-                            +{simulatedResults.savingsCash ? `$${simulatedResults.savingsCash}/yr` : "No cost"}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* CARD C: CONSISTENCY STREAK TRACKER */}
-                <motion.div 
-                  variants={cardVariants}
-                  className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative overflow-hidden group shadow-md space-y-4"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-emerald-500 uppercase tracking-widest font-black flex items-center gap-1.5 select-none">
-                      <Sparkles className="w-3.5 h-3.5" /> Habits & Consistency
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold bg-slate-950 text-slate-450 border border-slate-800 select-none">
-                      Streak Engine
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-4 bg-slate-950/40 p-4 rounded-2xl border border-slate-800/60 relative overflow-hidden">
-                    <div className="absolute right-0 top-0 opacity-10 translate-x-4 -translate-y-4 text-emerald-400 select-none pointer-events-none">
-                      <Zap className="w-20 h-20 fill-emerald-500" />
-                    </div>
-                    
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                      <span className="text-2xl animate-bounce">🔥</span>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-3xl font-display font-black text-white tracking-tight leading-none">
-                            {streakStatus.currentStreak}
-                          </span>
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-                            {streakStatus.currentStreak === 1 ? "Day Streak" : "Days Streak"}
-                          </span>
-                        </div>
-                        {streakStatus.currentStreak >= 7 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-400 text-slate-950 rounded-full text-[9px] font-black uppercase tracking-wider select-none animate-pulse">
-                            🏆 7-Day Milestone!
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-500 font-medium leading-none mt-1.5 select-none">
-                        Last check-in: {streakStatus.lastCheckedIn ? formatFriendlyDate(new Date(streakStatus.lastCheckedIn.replace(/-/g, "/"))) : "Never checked in"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Render 7-day visual grid */}
-                  <div className="bg-slate-950/25 p-3 rounded-2xl border border-slate-850/50">
-                    <p className="text-[9px] text-slate-500 uppercase tracking-wider font-extrabold text-center mb-1.5 select-none">Weekly Commitment Calendar</p>
-                    {(() => {
-                      const today = getSimulatedDate();
-                      const days = [];
-                      for (let i = 5; i >= 0; i--) {
-                        const d = new Date(today);
-                        d.setDate(d.getDate() - i);
-                        const dateStr = getLocalDateString(d);
-                        const dayName = d.toLocaleDateString("en-US", { weekday: "narrow" });
-                        const isCompleted = !!streakStatus.history[dateStr];
-                        const isToday = i === 0;
-                        days.push({ dayName, isCompleted, isToday, dateStr });
-                      }
-                      return (
-                        <div className="flex justify-around items-center gap-1 py-0.5">
-                          {days.map((item, idx) => (
-                            <div key={idx} className="flex flex-col items-center gap-1.5">
-                              <span className={`text-[10px] font-mono leading-none ${item.isToday ? "text-emerald-400 font-bold" : "text-slate-500"}`}>
-                                {item.dayName}
-                              </span>
-                              <div 
-                                title={item.isCompleted ? `Verified: ${item.dateStr}` : `Pending: ${item.dateStr}`}
-                                className={`w-7 h-7 rounded-full flex items-center justify-center border transition-all text-xs font-semibold select-none ${
-                                  item.isCompleted 
-                                    ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400 font-bold shadow-sm" 
-                                    : item.isToday 
-                                      ? "bg-slate-950 border-emerald-500/25 text-slate-600 border-dashed animate-pulse" 
-                                      : "bg-slate-950 border-slate-850 text-slate-800"
-                                }`}
-                              >
-                                {item.isCompleted ? "✓" : "•"}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Active commitments status */}
-                  <div className="space-y-2 text-xs text-slate-400">
-                    <span className="text-[9px] text-slate-500 uppercase font-bold block tracking-wider select-none">Today's Habits Check-off</span>
-                    
-                    {(() => {
-                      const activeRecs = twinAnalysis.recommendations.filter((rec, idx) => simulatedActions[idx]);
-                      if (activeRecs.length === 0) {
-                        return (
-                          <div className="p-3.5 bg-slate-950/45 rounded-2xl border border-slate-850 text-center">
-                            <p className="text-[11px] text-amber-500/90 font-semibold mb-1">No sustainable commitments selected.</p>
-                            <p className="text-[10px] text-slate-500 font-medium">
-                              Commit to actions in the <strong className="text-slate-400">Simulator</strong> below (e.g. Vegetarian diet, thermostat adjustment) to start your streak!
-                            </p>
-                          </div>
-                        );
-                      }
-                      
-                      const simDate = getSimulatedDate();
-                      const todayStr = getLocalDateString(simDate);
-                      const isCheckedInToday = streakStatus.lastCheckedIn === todayStr;
-
-                      return (
-                        <div className="space-y-3">
-                          <div className="max-h-[140px] overflow-y-auto space-y-1.5 pr-1 select-none">
-                            {activeRecs.map((rec, idx) => (
-                              <div key={idx} className="flex justify-between items-center gap-2.5 p-2 px-3 bg-slate-950/35 rounded-xl border border-slate-800/40 text-[11px]">
-                                <span className="font-semibold text-slate-350 truncate max-w-[150px]">{rec.actionName}</span>
-                                <span className={`shrink-0 flex items-center gap-1 ${isCheckedInToday ? "text-emerald-400" : "text-amber-500/90"} font-bold text-[10px] uppercase`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${isCheckedInToday ? "bg-emerald-500" : "bg-amber-500"}`} />
-                                  {isCheckedInToday ? "Maintained" : "Pending"}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          <button
-                            onClick={handleCheckIn}
-                            disabled={isCheckedInToday}
-                            className={`w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer text-center select-none ${
-                              isCheckedInToday 
-                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 cursor-not-allowed font-semibold" 
-                                : "bg-emerald-500 text-slate-950 hover:bg-emerald-450 border border-emerald-400 font-black shadow-sm shadow-emerald-500/10"
-                            }`}
-                          >
-                            {isCheckedInToday ? "✓ Checked In for Today" : "Submit Habit Check-In"}
-                          </button>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* SANDBOX CONTROLS WITH TIME MACHINE */}
-                  <div className="bg-slate-950/65 p-3.5 rounded-2xl border border-slate-800/80 space-y-2.5">
-                    <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 leading-none select-none">
-                      <span>VIRTUAL TIME MACHINE</span>
-                      <button onClick={handleResetStreak} className="text-slate-500 hover:text-rose-400 transition-colors uppercase select-none font-bold cursor-pointer">Reset</button>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-slate-900/50 p-2.5 rounded-xl border border-slate-800/60 leading-none">
-                      <div>
-                        <span className="text-[10px] text-slate-500 uppercase block font-medium mb-1 select-none">Virtual Target Date:</span>
-                        <span className="text-xs text-slate-300 font-mono font-bold leading-normal">{formatFriendlyDate(getSimulatedDate())}</span>
-                      </div>
-                      <button 
-                        onClick={handleSimulateNextDay}
-                        title="Simulate passing of 24 hours"
-                        className="bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all select-none cursor-pointer"
-                      >
-                        +1 Day ⏩
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-
-              </div>
-
-              {/* RIGHT COLUMN: DISTRIBUTION, PROJECTIONS, ACTION CARD (spans 8 columns) */}
-              <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                
-                {/* 1. EMISSION SOURCE CATEGORIC BREAKDOWN BAR CHARTS (spans cols 2) */}
-                <motion.div 
-                  variants={cardVariants}
-                  className="md:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between shadow-md"
-                >
-                  <div>
-                    <h3 className="font-display font-bold text-xl text-white mb-1 flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-emerald-400" /> Category Breakdown Intensity
-                    </h3>
-                    <p className="text-xs text-slate-400 mb-6 leading-relaxed">
-                      Annual weight measurements in standard kg CO2e calculations.
-                    </p>
-
-                    <div className="space-y-4" role="list" aria-label="Carbon categories data breakdown">
-                      {[
-                        { key: "flights", label: "Air Travel / Flights", val: twinAnalysis.emissionBreakdown.flights, color: "bg-rose-500" },
-                        { key: "transportation", label: "Daily Ground Transit", val: twinAnalysis.emissionBreakdown.transportation, color: "bg-teal-500" },
-                        { key: "food", label: "Nutritional Footprint", val: twinAnalysis.emissionBreakdown.food, color: "bg-amber-500" },
-                        { key: "energy", label: "Domestic Utility Energy", val: twinAnalysis.emissionBreakdown.energy, color: "bg-indigo-500" },
-                        { key: "shopping", label: "Discretionary Shopping", val: twinAnalysis.emissionBreakdown.shopping, color: "bg-purple-500" },
-                      ].map((row) => {
-                        const maxVal = Math.max(
-                          twinAnalysis.emissionBreakdown.flights,
-                          twinAnalysis.emissionBreakdown.transportation,
-                          twinAnalysis.emissionBreakdown.food,
-                          twinAnalysis.emissionBreakdown.energy,
-                          twinAnalysis.emissionBreakdown.shopping,
-                          1000
-                        );
-                        const widthPercent = `${Math.round((row.val / maxVal) * 100)}%`;
-                        return (
-                          <div key={row.key} className="space-y-1.5" role="listitem">
-                            <div className="flex justify-between items-center text-xs font-semibold">
-                              <span className="text-slate-300 flex items-center gap-1.5">
-                                <span className={`w-2 h-2 rounded-full ${row.color}`} />
-                                {row.label}
-                              </span>
-                              <span className="text-slate-400 font-mono font-bold">{row.val.toLocaleString()} kg CO2e</span>
-                            </div>
-                            <div className="h-2 w-full bg-slate-950 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${row.color} rounded-full transition-all duration-1000`}
-                                style={{ width: widthPercent }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 border-t border-slate-850 pt-4 text-[10px] text-slate-500 select-none flex justify-between gap-4">
-                    <span>Flight: International ~1.5 kg/mile, Domestic ~0.25 kg/mile</span>
-                    <span>Gas commute auto ~0.36 kg/mile</span>
-                  </div>
-                </motion.div>
-
-                {/* 2. EMISSION FORECAST CARD (spans col 1) */}
-                <motion.div 
-                  variants={cardVariants}
-                  className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between shadow-md"
-                >
-                  <div className="space-y-4">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">Future Forecast Panels</span>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
-                        <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-emerald-400" /> 30-Day Outlook
-                        </span>
-                        <span className="text-xs text-slate-200 font-mono font-bold">
-                          {twinAnalysis.forecast30Days}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center bg-slate-950/80 p-3 rounded-xl border border-slate-800">
-                        <span className="text-xs font-semibold text-slate-400 flex items-center gap-1.5">
-                          <Layers className="w-3.5 h-3.5 text-teal-400" /> 90-Day Outlook
-                        </span>
-                        <span className="text-xs text-slate-200 font-mono font-bold">
-                          {twinAnalysis.forecast90Days}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center bg-slate-950 p-3 rounded-xl border border-slate-800">
-                        <span className="text-xs font-semibold text-white flex items-center gap-1.5">
-                          <Zap className="w-3.5 h-3.5 text-amber-500" /> Projected Annual
-                        </span>
-                        <span className="text-xs text-emerald-400 font-mono font-black">
-                          {simulatedResults.annual.toLocaleString()} kg CO2e
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 text-[10px] text-slate-500 leading-normal bg-slate-950/20 px-2 py-1 rounded">
-                    Based on {userInputs.transportation} commuting & {userInputs.domesticFlights + userInputs.internationalFlights} yearly flights.
-                  </div>
-                </motion.div>
-
-                {/* 3. FEATURED HIGH IMPACT RECOMMENDATION PANEL (spans col 1) */}
-                <motion.div 
-                  variants={cardVariants}
-                  className="bg-emerald-500 border border-emerald-400 rounded-3xl p-6 flex flex-col justify-between text-slate-950 shadow-lg relative overflow-hidden"
-                >
-                  <div className="absolute right-0 bottom-0 opacity-[0.03] pointer-events-none text-slate-950">
-                    <Zap className="w-48 h-48" />
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <span className="inline-flex items-center gap-1.5 p-1 px-2.5 bg-slate-950 border border-slate-800 rounded-full text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none">
-                      <Zap className="w-3 h-3 fill-emerald-400" /> High Impact Action
-                    </span>
-
-                    <div className="space-y-1">
-                      <h4 className="text-xl font-black tracking-tight leading-tight">
-                        {twinAnalysis.recommendations[0]?.actionName || "Optimize Commute Patterns"}
-                      </h4>
-                      <p className="text-xs font-medium leading-relaxed text-slate-900 opacity-90">
-                        {twinAnalysis.recommendations[0]?.whySelected || "Identified as your absolute prime carbon mitigation vector today."}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-slate-950/15 flex justify-between items-end">
-                    <div>
-                      <span className="text-[9px] uppercase tracking-wider font-extrabold text-slate-800 block">EST. SAVINGS</span>
-                      <span className="text-lg font-black leading-none">{twinAnalysis.recommendations[0]?.monetarySavings || "$850/yr"}</span>
-                    </div>
-
-                    <button
-                      onClick={() => handleToggleSimulation(0)}
-                      className={`px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer border ${
-                        simulatedActions[0] 
-                          ? "bg-slate-950 text-emerald-400 border-slate-800" 
-                          : "bg-slate-900 text-white hover:bg-slate-950 border-slate-800 shadow"
-                      }`}
-                    >
-                      {simulatedActions[0] ? "✓ Committed" : "Commit to Twin"}
-                    </button>
-                  </div>
-                </motion.div>
-
-              </div>
-
-            </div>
+          <div className="space-y-8 animate-fadeIn">
+            {/* Dashboard View (Card A & Charts) */}
+            <DashboardView
+              userInputs={userInputs}
+              twinAnalysis={twinAnalysis}
+              simulatedResults={simulatedResults}
+              simulatedActions={simulatedActions}
+              onToggleSimulation={handleToggleSimulation}
+              cardVariants={cardVariants}
+            />
 
             {/* DIAGNOSTIC SUMMARY OR MOCK NOTICE */}
             <motion.div 
@@ -1315,7 +720,7 @@ export default function App() {
               >
                 {isSaving ? (
                   <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving Twin...
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving...
                   </>
                 ) : (
                   <>
@@ -1325,88 +730,21 @@ export default function App() {
               </button>
             </motion.div>
 
-            {/* SECOND ROW BENTO LABELS: INTERACTIVE SIMULATION MULTI-COLUMN ENGINE */}
-            <motion.div 
-              variants={cardVariants}
-              className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6 shadow-md"
-            >
-              <div>
-                <div className="flex justify-between items-center flex-wrap gap-2">
-                  <h3 className="font-display font-semibold text-lg text-white flex items-center gap-2">
-                    <Sliders className="w-5 h-5 text-emerald-400" /> Interactive Mitigation Simulator
-                  </h3>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-950 px-2 py-1 rounded border border-slate-800">
-                    Continuous Mitigation Action Pipeline
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  Toggle proposed actions below to recalculate your lifestyle twin metrics natively.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {twinAnalysis.recommendations.map((rec, index) => {
-                  const isCommitted = !!simulatedActions[index];
-                  return (
-                    <div 
-                      key={index} 
-                      className={`p-5 rounded-3xl border transition-all flex flex-col justify-between ${
-                        isCommitted 
-                          ? "bg-emerald-950/15 border-emerald-500/40 relative shadow-inner" 
-                          : "bg-slate-950/40 border-slate-800/80 hover:border-slate-750"
-                      }`}
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded ${
-                            rec.easeOfImplementation === "easy" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                            rec.easeOfImplementation === "medium" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
-                            "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                          }`}>
-                            {rec.easeOfImplementation} Ease
-                          </span>
-                          <span className="text-[11px] text-slate-400 font-medium">
-                            Avoids <strong className="text-white">{rec.co2Reduction}</strong>
-                          </span>
-                        </div>
-
-                        <h4 className="font-bold text-sm text-white">
-                          {rec.actionName}
-                        </h4>
-                      </div>
-
-                      {/* Extra Diagnostic details */}
-                      <div className="mt-4 pt-3 border-t border-slate-800/60 text-xs space-y-2">
-                        <div>
-                          <span className="text-[9px] text-slate-500 uppercase block font-bold">Why Proposed</span>
-                          <p className="text-slate-400 leading-relaxed mt-0.5">{rec.whySelected}</p>
-                        </div>
-                        <div>
-                          <span className="text-[9px] text-emerald-500 uppercase block font-bold">Action Vector Plan</span>
-                          <p className="text-emerald-400/90 leading-relaxed font-semibold mt-0.5">{rec.implementationStep}</p>
-                        </div>
-                      </div>
-
-                      {/* Toggle button */}
-                      <div className="mt-5 pt-3 border-t border-slate-850 flex justify-between items-center">
-                        <span className="text-xs font-semibold text-emerald-400">{rec.monetarySavings} Saved</span>
-                        <button
-                          onClick={() => handleToggleSimulation(index)}
-                          aria-pressed={isCommitted}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center gap-1 border select-none ${
-                            isCommitted 
-                              ? "bg-emerald-500 text-slate-950 border-emerald-400 font-black" 
-                              : "bg-slate-905 border-slate-800 text-slate-300 hover:border-slate-700 font-medium"
-                          }`}
-                        >
-                          {isCommitted ? "Committed" : "Commit to Twin"}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
+            {/* Simulator View (Card B, Card C & Slider Commit checks) */}
+            <SimulatorView
+              twinAnalysis={twinAnalysis}
+              simulatedResults={simulatedResults}
+              simulatedActions={simulatedActions}
+              onToggleSimulation={handleToggleSimulation}
+              streakStatus={streakStatus}
+              onCheckIn={handleCheckIn}
+              onResetStreak={handleResetStreak}
+              onSimulateNextDay={handleSimulateNextDay}
+              getSimulatedDate={getSimulatedDate}
+              formatFriendlyDate={formatFriendlyDate}
+              getLocalDateString={getLocalDateString}
+              cardVariants={cardVariants}
+            />
 
             {/* TWIN ARCHIVAL SNAPSHOT LOG HISTORY COLLECTIONS */}
             <motion.div 
@@ -1428,10 +766,10 @@ export default function App() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {historyTwins.map((historic) => (
-                    <div key={historic.id} className="p-5 bg-slate-950/60 rounded-3xl border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                    <div key={historic.id} className="p-5 bg-slate-950/60 rounded-3xl border border-slate-850 flex flex-col justify-between hover:border-slate-800 transition-colors">
                       <div className="space-y-2">
                         <div className="flex justify-between items-start">
-                          <span className="text-[10px] font-mono text-slate-500">
+                          <span className="text-[10px] font-mono text-slate-550">
                             Snap: {new Date(historic.createdAt).toLocaleDateString()}
                           </span>
                           <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest px-1.5 py-0.5 bg-slate-900 rounded">
@@ -1441,7 +779,7 @@ export default function App() {
                         <h4 className="text-sm font-semibold text-white truncate">
                           {historic.analysis.carbonPersonality}
                         </h4>
-                        <p className="text-[11px] text-slate-400 line-clamp-2">
+                        <p className="text-[11px] text-slate-450 line-clamp-2">
                           Commute: {historic.inputs.transportation} | Domestic Flights: {historic.inputs.domesticFlights} | Diet: {historic.inputs.foodDiet}
                         </p>
                       </div>
@@ -1457,7 +795,7 @@ export default function App() {
                         <button
                           onClick={() => handleDeleteSnapshot(historic.id)}
                           disabled={isDeleting === historic.id}
-                          className="text-xs text-slate-500 hover:text-rose-400 cursor-pointer disabled:opacity-50"
+                          className="text-xs text-slate-500 hover:text-rose-455 cursor-pointer disabled:opacity-50"
                           aria-label="Delete historic state"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1468,8 +806,7 @@ export default function App() {
                 </div>
               )}
             </motion.div>
-
-          </motion.div>
+          </div>
         )}
 
         {/* TAB 2: SETUP PARAMETERS FORM */}

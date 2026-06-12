@@ -111,9 +111,9 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         {/* Title / Logo Header */}
         <div className="bg-gradient-to-br from-slate-900 to-emerald-950/20 p-8 text-center border-b border-emerald-950/30">
           <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 text-emerald-400 rounded-full mb-4 ring-1 ring-emerald-500/20 animate-pulse">
-            <Leaf className="w-8 h-8" />
+            <Leaf className="w-8 h-8" aria-hidden="true" />
           </div>
-          <h1 className="font-display font-bold text-3xl tracking-tight text-white mb-2">
+          <h1 className="font-display font-bold text-3xl tracking-tight text-white mb-2" id="auth-heading">
             CarbonTwin <span className="text-emerald-400">AI</span>
           </h1>
           <p className="text-slate-400 text-sm">
@@ -124,11 +124,11 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         <div className="p-8">
           {/* Mock Mode Status Notice Box */}
           {isMockFirebase ? (
-            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200">
+            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200" role="status">
               <div className="flex gap-2 items-start">
-                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="space-y-1">
-                  <p className="font-semibold">Local Sandbox Session Active</p>
+                  <p className="font-semibold" id="sandbox-status-label">Local Sandbox Session Active</p>
                   <p className="opacity-90 leading-relaxed">
                     Firebase credentials not detected. Applet is executing securely using local sandbox state.
                   </p>
@@ -136,22 +136,22 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               </div>
             </div>
           ) : (
-            <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-200">
+            <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-200" role="status">
               <div className="flex gap-2 items-start">
-                <Leaf className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <p className="font-semibold">Authenticated Firestore Connection Ready</p>
+                <Leaf className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="font-semibold" id="firebase-status-label">Authenticated Firestore Connection Ready</p>
               </div>
             </div>
           )}
 
           {error && (
             <div className="mb-6 p-4 bg-rose-500/15 border border-rose-500/30 text-rose-200 text-xs rounded-xl flex gap-2 items-start" role="alert">
-              <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" aria-hidden="true" />
               <p>{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" aria-describedby="auth-heading">
             <div>
               <label htmlFor="email" className="block text-xs font-semibold text-slate-300 uppercase tracking-widest mb-2">
                 Email Address
@@ -160,7 +160,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                 id="email"
                 type="email"
                 required
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-4 py-3 text-sm transition-colors duration-200 placeholder-slate-600 focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 text-white rounded-xl px-4 py-3 text-sm transition-all duration-200 placeholder-slate-600 focus:outline-none"
                 placeholder="name@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -176,7 +176,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                 id="password"
                 type="password"
                 required
-                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-white rounded-xl px-4 py-3 text-sm transition-colors duration-200 placeholder-slate-600 focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 text-white rounded-xl px-4 py-3 text-sm transition-all duration-200 placeholder-slate-600 focus:outline-none"
                 placeholder="••••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -187,19 +187,19 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 px-4 rounded-xl text-sm transition-all duration-200 shadow-lg shadow-emerald-500/10 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 mt-2"
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 px-4 rounded-xl text-sm transition-all duration-200 shadow-lg shadow-emerald-500/10 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 mt-2 cursor-pointer"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Orbit className="w-4 h-4 animate-spin" /> Analyzing session...
+                  <Orbit className="w-4 h-4 animate-spin" aria-hidden="true" /> Analyzing session...
                 </span>
               ) : isSignUp ? (
                 <span className="flex items-center justify-center gap-2">
-                  <UserPlus className="w-4 h-4" /> Register New Account
+                  <UserPlus className="w-4 h-4" aria-hidden="true" /> Register New Account
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <KeyRound className="w-4 h-4" /> Secure Account Login
+                  <KeyRound className="w-4 h-4" aria-hidden="true" /> Secure Account Login
                 </span>
               )}
             </button>
@@ -225,14 +225,16 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             <button
               type="button"
               onClick={handleLocalDemo}
-              className="bg-slate-950 hover:bg-slate-800 text-white text-xs border border-slate-800 focus:border-amber-500 py-3 rounded-xl font-medium transition-colors duration-200 focus:outline-none"
+              aria-label="Launch application instantly using local simulator database credentials"
+              className="bg-slate-950 hover:bg-slate-800 text-white text-xs border border-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none py-3 rounded-xl font-medium transition-colors duration-200 cursor-pointer"
             >
               🚀 Sandbox Demo
             </button>
             <button
               type="button"
               onClick={handleAnonymousAuth}
-              className="bg-slate-950 hover:bg-emerald-950/20 text-emerald-400 text-xs border border-emerald-900/40 py-3 rounded-xl font-medium transition-colors duration-200 focus:outline-none"
+              aria-label="Log in anonymously as guest with simulated transient parameters"
+              className="bg-slate-950 hover:bg-emerald-950/20 text-emerald-400 text-xs border border-emerald-900/40 focus:ring-2 focus:ring-emerald-500 focus:outline-none py-3 rounded-xl font-medium transition-colors duration-200 cursor-pointer"
             >
               🌿 Guest Mode
             </button>

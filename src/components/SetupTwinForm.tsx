@@ -76,8 +76,8 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
   return (
     <form onSubmit={handleFormSubmit} className="space-y-12 bg-slate-900 border border-slate-850 p-6 md:p-10 rounded-2xl shadow-xl max-w-4xl mx-auto font-sans select-none text-slate-100">
       <div className="border-b border-slate-800 pb-6">
-        <h2 className="text-2xl font-bold font-display tracking-tight text-white flex items-center gap-2">
-          <Leaf className="w-6 h-6 text-emerald-400" /> Specify Your Lifestyle Twin Parameters
+        <h2 className="text-2xl font-bold font-display tracking-tight text-white flex items-center gap-2" id="form-heading">
+          <Leaf className="w-6 h-6 text-emerald-400" aria-hidden="true" /> Specify Your Lifestyle Twin Parameters
         </h2>
         <p className="text-slate-400 text-xs mt-1">
           These inputs configure your initial digital replica. CarbonTwin AI evaluates this context to predict emissions and recommend changes.
@@ -85,16 +85,16 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
       </div>
 
       {/* BLOCK 1: Daily Transit & Commuting */}
-      <fieldset className="space-y-6">
-        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+      <fieldset className="space-y-6" aria-labelledby="transit-legend">
+        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2" id="transit-legend">
           01. Transit & Commuting Parameters
         </legend>
         
         <div>
-          <label className="block text-xs text-slate-400 font-medium mb-3">
+          <label className="block text-xs text-slate-400 font-medium mb-3" id="transit-options-label">
             Primary Transportation Choice
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3" role="radiogroup" aria-label="Transportation Options">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3" role="radiogroup" aria-labelledby="transit-options-label">
             {transportOptions.map((opt) => {
               const Icon = opt.icon;
               const isSelected = transport === opt.value;
@@ -104,15 +104,16 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
                   type="button"
                   onClick={() => setTransport(opt.value as any)}
                   aria-checked={isSelected}
+                  aria-label={`${opt.label}: ${opt.desc}`}
                   role="radio"
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                  className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
                     isSelected 
                       ? "bg-slate-950 border-emerald-500 ring-2 ring-emerald-500/20 text-emerald-400" 
                       : "bg-slate-950/40 border-slate-800 text-slate-300 hover:border-slate-700"
                   }`}
                   style={{ minHeight: "80px" }} // WCAG Touch target
                 >
-                  <Icon className={`w-6 h-6 mb-2 ${isSelected ? "text-emerald-400" : "text-slate-500"}`} />
+                  <Icon className={`w-6 h-6 mb-2 ${isSelected ? "text-emerald-400" : "text-slate-500"}`} aria-hidden="true" />
                   <span className="text-xs font-semibold">{opt.label}</span>
                 </button>
               );
@@ -123,7 +124,7 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
         {transport === "car" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-950/40 border border-slate-850 rounded-xl animate-fadeIn">
             <div>
-              <label htmlFor="carMileage animate-pulsing" className="block text-xs text-slate-300 font-medium mb-2">
+              <label htmlFor="carMileage" className="block text-xs text-slate-300 font-medium mb-2">
                 Annual Auto Mileage (Miles)
               </label>
               <input
@@ -157,8 +158,8 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
       </fieldset>
 
       {/* BLOCK 2: Flight Intensity */}
-      <fieldset className="space-y-6 border-t border-slate-800 pt-8">
-        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+      <fieldset className="space-y-6 border-t border-slate-800 pt-8" aria-labelledby="air-travel-legend">
+        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2" id="air-travel-legend">
           02. Air Travel Density
         </legend>
 
@@ -177,7 +178,7 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
                 onChange={(e) => setDomesticFlights(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 pr-10"
               />
-              <Plane className="absolute right-3 top-3.5 w-4 h-4 text-slate-600" />
+              <Plane className="absolute right-3 top-3.5 w-4 h-4 text-slate-600" aria-hidden="true" />
             </div>
           </div>
 
@@ -195,7 +196,7 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
                 onChange={(e) => setInternationalFlights(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500 pr-10"
               />
-              <Plane className="absolute right-3 top-3.5 w-4 h-4 text-slate-600 rotate-45" />
+              <Plane className="absolute right-3 top-3.5 w-4 h-4 text-slate-600 rotate-45" aria-hidden="true" />
             </div>
           </div>
 
@@ -218,16 +219,16 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
       </fieldset>
 
       {/* BLOCK 3: Diet Preferences */}
-      <fieldset className="space-y-6 border-t border-slate-800 pt-8">
-        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+      <fieldset className="space-y-6 border-t border-slate-800 pt-8" aria-labelledby="nutritional-habits-legend">
+        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2" id="nutritional-habits-legend">
           03. Nutritional Habits
         </legend>
 
         <div>
-          <label className="block text-xs text-slate-400 font-medium mb-3">
+          <label className="block text-xs text-slate-400 font-medium mb-3" id="diet-classification-label">
             Primary Diet Classification
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3" role="radiogroup" aria-labelledby="diet-classification-label">
             {dietOptions.map((opt) => {
               const isSelected = foodDiet === opt.value;
               return (
@@ -235,7 +236,10 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
                   key={opt.value}
                   type="button"
                   onClick={() => setFoodDiet(opt.value as any)}
-                  className={`flex flex-col p-4 rounded-xl border text-left transition-all ${
+                  role="radio"
+                  aria-checked={isSelected}
+                  aria-label={`${opt.label}: ${opt.desc}`}
+                  className={`flex flex-col p-4 rounded-xl border text-left transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
                     isSelected 
                       ? "bg-slate-950 border-emerald-500 text-emerald-400 ring-1 ring-emerald-500" 
                       : "bg-slate-950/40 border-slate-800 text-slate-300 hover:border-slate-700"
@@ -252,8 +256,8 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
       </fieldset>
 
       {/* BLOCK 4: Home Energy & Utilities */}
-      <fieldset className="space-y-6 border-t border-slate-800 pt-8">
-        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+      <fieldset className="space-y-6 border-t border-slate-800 pt-8" aria-labelledby="household-utilities-legend">
+        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2" id="household-utilities-legend">
           04. Household utilities & Energy
         </legend>
 
@@ -272,7 +276,7 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
                 onChange={(e) => setElectricityUsage(Number(e.target.value))}
                 className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500"
               />
-              <Zap className="absolute right-3 top-3.5 w-4 h-4 text-emerald-500/50" />
+              <Zap className="absolute right-3 top-3.5 w-4 h-4 text-emerald-500/50" aria-hidden="true" />
             </div>
           </div>
 
@@ -311,16 +315,16 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
       </fieldset>
 
       {/* BLOCK 5: Consumer Shopping */}
-      <fieldset className="space-y-6 border-t border-slate-800 pt-8">
-        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+      <fieldset className="space-y-6 border-t border-slate-800 pt-8" aria-labelledby="shopping-habits-legend">
+        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2" id="shopping-habits-legend">
           05. Consumer Goods & Shopping
         </legend>
 
         <div>
-          <label className="block text-xs text-slate-400 font-medium mb-3">
+          <label className="block text-xs text-slate-400 font-medium mb-3" id="shopping-volume-label">
             Monthly Shopping Volume (Clothing, Tech, Goods)
           </label>
-          <div className="grid grid-cols-3 gap-4" role="radiogroup" aria-label="Shopping Level">
+          <div className="grid grid-cols-3 gap-4" role="radiogroup" aria-labelledby="shopping-volume-label">
             {["low", "medium", "high"].map((level) => {
               const isSelected = shoppingLevel === level;
               return (
@@ -330,14 +334,15 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
                   onClick={() => setShoppingLevel(level as any)}
                   aria-checked={isSelected}
                   role="radio"
-                  className={`flex items-center justify-center p-4 rounded-xl border text-sm font-bold capitalize transition-all ${
+                  aria-label={`Shopping Level ${level}`}
+                  className={`flex items-center justify-center p-4 rounded-xl border text-sm font-bold capitalize transition-all focus:ring-2 focus:ring-emerald-500 focus:outline-none ${
                     isSelected 
                       ? "bg-slate-950 border-emerald-500 text-emerald-400 ring-1 ring-emerald-500" 
                       : "bg-slate-950/40 border-slate-800 text-slate-350 hover:border-slate-700"
                   }`}
                   style={{ minHeight: "48px" }} // WCAG touch
                 >
-                  <ShoppingBag className="w-4 h-4 mr-2" />
+                  <ShoppingBag className="w-4 h-4 mr-2" aria-hidden="true" />
                   {level}
                 </button>
               );
@@ -347,8 +352,8 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
       </fieldset>
 
       {/* BLOCK 6: Lifestyle Goals */}
-      <fieldset className="space-y-6 border-t border-slate-800 pt-8">
-        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2">
+      <fieldset className="space-y-6 border-t border-slate-800 pt-8" aria-labelledby="lifestyle-goals-legend">
+        <legend className="text-sm font-semibold text-emerald-400 uppercase tracking-widest flex items-center gap-2" id="lifestyle-goals-legend">
           06. Ecological Ambitions
         </legend>
 
@@ -391,21 +396,22 @@ export function SetupTwinForm({ initialInputs, onSubmit, isAnalyzing }: SetupTwi
       {/* Submit Button */}
       <div className="border-t border-slate-800 pt-8 flex items-center justify-between gap-4">
         <div className="hidden md:flex items-center gap-2 text-xs text-slate-500">
-          <ShieldCheck className="w-4 h-4 text-emerald-500" /> Secure evaluation using Google Gemini Flash
+          <ShieldCheck className="w-4 h-4 text-emerald-500" aria-hidden="true" /> Secure evaluation using Google Gemini Flash
         </div>
 
         <button
           type="submit"
           disabled={isAnalyzing}
+          aria-label={isAnalyzing ? "Analyzing inputs and compiling your sustainable twin. Please wait." : "Submit custom parameters to initialize your Carbon Twin model"}
           className="w-full md:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-4 px-8 rounded-xl text-sm transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 cursor-pointer focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50"
         >
           {isAnalyzing ? (
             <>
-              <Sliders className="w-4 h-4 animate-spin" /> Compiling Engine State...
+              <Sliders className="w-4 h-4 animate-spin" aria-hidden="true" /> Compiling Engine State...
             </>
           ) : (
             <>
-              Initialize Carbon Twin <ArrowRight className="w-4 h-4" />
+              Initialize Carbon Twin <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </>
           )}
         </button>
