@@ -1,99 +1,319 @@
-# AI-Powered Web Application
+# 🌍 CarbonTwin AI
 
-An AI-powered web application built using Google AI Studio App Builder as part of the Build with AI / Prompt Wars Virtual Challenge.
+> Understand. Track. Reduce.
 
-## 🚀 Overview
+CarbonTwin AI is an AI-powered sustainability assistant that creates a personalized **Carbon Digital Twin** of a user's lifestyle, predicts future carbon emissions, and provides intelligent recommendations to reduce environmental impact through simple, actionable habits.
 
-This project demonstrates how AI can be used to create intelligent, user-friendly web applications with minimal development effort. Built using Google AI Studio App Builder, the application leverages Gemini AI capabilities to provide smart, context-aware responses and improve user experience.
+---
 
-## ✨ Features
+## 🚀 Challenge
 
-- AI-powered interactions
-- User-friendly interface
-- Fast and responsive design
-- Powered by Google Gemini
-- Built with Google AI Studio App Builder
-- Easy deployment and scalability
+Design a solution that helps individuals understand, track, and reduce their carbon footprint through simple actions and personalized insights.
 
-## 🛠️ Tech Stack
+---
 
-- Google AI Studio App Builder
-- Gemini AI
-- HTML/CSS/JavaScript (if applicable)
-- GitHub
+## 💡 Problem Statement
 
-## 📌 Problem Statement
+Most people want to live more sustainably but struggle to understand:
 
-This application was developed to explore how AI can simplify workflows and enhance user experiences through intelligent automation and natural language interactions.
+* How much carbon they generate
+* Which activities contribute most to emissions
+* Which actions will create the biggest positive impact
+* How to build long-term sustainable habits
 
-## 🎯 Objectives
+Existing carbon calculators often provide static reports without personalized guidance or future planning.
 
-- Build a functional AI-powered web application
-- Learn prompt engineering techniques
-- Explore Google AI Studio capabilities
-- Deploy and share the project with the community
+---
 
-## 📸 Screenshots
+## 🎯 Our Solution
 
-Add screenshots of your application here.
+CarbonTwin AI creates a living digital model of a user's lifestyle.
 
-### Application Preview
+Instead of only calculating emissions, CarbonTwin AI:
 
-![App Screenshot](screenshots/app-preview.png)
+✅ Understands user behavior
 
-## 🚀 Getting Started
+✅ Creates a Carbon Twin personality
 
-### Prerequisites
+✅ Identifies emission hotspots
 
-- Google Account
-- Google AI Studio Access
-- Modern Web Browser
+✅ Predicts future emissions
 
-### Installation
+✅ Simulates lifestyle changes
 
-1. Clone the repository:
+✅ Generates personalized sustainability missions
 
-```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
+✅ Provides AI-powered coaching
 
+---
 
+## 🌟 Key Features
 
+### 1. Carbon Digital Twin
 
+Creates a virtual representation of a user's lifestyle based on:
 
+* Transportation
+* Flights
+* Food choices
+* Energy consumption
+* Shopping habits
 
+Example Carbon Twin Identities:
 
+* Frequent Traveler
+* Balanced Commuter
+* Conscious Consumer
+* Home Energy User
+* Sustainability Champion
 
+---
 
+### 2. AI Decision Engine
 
+The recommendation engine prioritizes actions using:
 
+Impact Score = Carbon Reduction × Feasibility × User Preference
 
+Example:
 
+If flights are the largest emission source, reducing flights is prioritized before suggesting minor energy-saving actions.
 
+---
 
+### 3. Carbon Forecasting
 
+Predicts:
 
+* 30-Day Emissions
+* 90-Day Emissions
+* Annual Emissions
 
+Helping users understand future environmental impact.
 
+---
 
+### 4. What-If Simulator
 
+Allows users to simulate changes such as:
 
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+* Taking fewer flights
+* Using public transport
+* Reducing AC usage
+* Changing diet
 
-# Run and deploy your AI Studio app
+Instantly shows:
 
-This contains everything you need to run your app locally.
+* Carbon savings
+* Financial savings
+* Sustainability score improvement
 
-View your app in AI Studio: https://ai.studio/apps/552cabde-cbbf-4416-9991-607993ef9484
+---
 
-## Run Locally
+### 5. AI Sustainability Coach
 
-**Prerequisites:**  Node.js
+Provides personalized explanations:
 
+* Why a recommendation matters
+* Estimated impact
+* Ease of implementation
+* Progress tracking
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+---
+
+### 6. Weekly Sustainability Missions
+
+Examples:
+
+* Use public transport twice this week
+* Reduce AC usage by 1 hour/day
+* Skip one unnecessary online purchase
+
+---
+
+### 7. Gamification
+
+* Sustainability Score
+* Weekly Streaks
+* Achievement Badges
+* Milestone Tracking
+
+---
+
+## 🧠 AI Capabilities
+
+CarbonTwin AI is not a chatbot.
+
+It acts as a context-aware decision support system.
+
+### AI Functions
+
+* Carbon Personality Classification
+* Carbon Twin Generation
+* Recommendation Ranking
+* Forecast Generation
+* Impact Simulation
+* Behavioral Coaching
+
+---
+
+## 🏗 Architecture
+
+### Frontend
+
+* React
+* TypeScript
+* Tailwind CSS
+
+### AI Layer
+
+* Gemini API
+* Decision Engine
+* Forecast Engine
+
+### Backend (Planned)
+
+* Firebase Authentication
+* Firestore Database
+* Firebase Cloud Functions
+
+### Analytics
+
+* Firebase Analytics
+* Google Analytics
+
+---
+
+## 🔐 Security
+
+Implemented security considerations:
+
+* Input validation
+* User data isolation
+* Secure API handling
+* Principle of least privilege
+
+Planned:
+
+* Firebase Authentication
+* Firestore Security Rules
+* Role-based access control
+
+---
+
+## ♿ Accessibility
+
+Designed according to WCAG 2.2 principles.
+
+Features include:
+
+* Keyboard navigation
+* High contrast mode
+* Semantic HTML
+* Screen reader support
+* Mobile-first responsive design
+
+---
+
+## 🧪 Testing Strategy
+
+### Automated Testing
+
+* Unit Tests
+* Integration Tests
+* Accessibility Tests
+* AI Decision Engine Tests
+* Forecast Validation Tests
+
+### Manual Testing
+
+* Keyboard Navigation
+* Mobile Responsiveness
+* Judge Demo Walkthrough
+* High Contrast Verification
+
+---
+
+## 📊 Example User Journey
+
+1. Complete onboarding assessment
+2. Generate Carbon Twin
+3. View Sustainability Score
+4. Review emission hotspots
+5. Explore forecasts
+6. Simulate improvements
+7. Complete weekly missions
+8. Track progress over time
+
+---
+
+## 📁 Project Structure
+
+```text
+src/
+├── components/
+├── pages/
+├── services/
+├── engine/
+│   ├── carbonTwinEngine.ts
+│   ├── decisionEngine.ts
+│   ├── forecastEngine.ts
+│   └── simulatorEngine.ts
+├── tests/
+└── assets/
+```
+
+## 🎥 Demo Highlights
+
+### Carbon Twin Reveal
+
+Discover your sustainability identity.
+
+### AI Recommendation Engine
+
+Receive personalized, context-aware actions.
+
+### Carbon Forecast
+
+See your future emissions before they happen.
+
+### What-If Simulator
+
+Understand the impact of lifestyle changes instantly.
+
+---
+
+## 🔮 Future Roadmap
+
+* Firebase Integration
+* Real-Time Carbon Tracking
+* Smart Meter Integration
+* Flight Carbon APIs
+* Household Carbon Twin
+* Community Challenges
+* Carbon Offset Marketplace
+* Google Maps Sustainable Routing
+
+---
+
+## 👨‍💻 Built For
+
+AI-Powered Sustainability Challenge
+
+Focused on:
+
+* Smart Dynamic Assistance
+* Logical Decision Making
+* Real-World Usability
+* Security
+* Accessibility
+* Testing
+* Scalability
+
+---
+
+## 🌱 Vision
+
+To make sustainability personal, understandable, and actionable through AI-powered guidance and behavior change.
+
+CarbonTwin AI helps users not only measure their impact but actively reduce it.
