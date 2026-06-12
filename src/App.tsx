@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import confetti from "canvas-confetti";
+import { motion } from "motion/react";
 import { AuthScreen } from "./components/AuthScreen";
 import { SetupTwinForm } from "./components/SetupTwinForm";
 import { db, auth, isMockFirebase, handleFirestoreError, OperationType } from "./lib/firebase";
@@ -73,6 +74,15 @@ const DEFAULT_INPUTS: UserInputs = {
   applianceUsage: "standard",
   shoppingLevel: "medium",
   lifestyleGoals: ["reduce_emissions", "save_money"],
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.35, ease: "easeOut" }
+  }
 };
 
 export default function App() {
@@ -808,7 +818,19 @@ export default function App() {
 
         {/* TAB 1: ACTIVE DIGITAL TWIN DASHBOARD */}
         {activeTab === "dashboard" && (
-          <div className="space-y-8">
+          <motion.div 
+            className="space-y-8"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: {
+                transition: {
+                  staggerChildren: 0.05
+                }
+              }
+            }}
+          >
             
             {/* TOP DIAGNOSIS GRID: 12 COLUMNS */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -817,7 +839,10 @@ export default function App() {
               <div className="lg:col-span-4 space-y-8">
                 
                 {/* CARD A: PERSONALITY CARD */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative overflow-hidden group shadow-md">
+                <motion.div 
+                  variants={cardVariants}
+                  className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative overflow-hidden group shadow-md"
+                >
                   <div className="absolute right-3 top-3 opacity-[0.04] text-emerald-500 pointer-events-none">
                     <Leaf className="w-36 h-36" />
                   </div>
@@ -861,10 +886,13 @@ export default function App() {
                       <Award className="w-4 h-4 text-emerald-400" />
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* CARD B: SCORE CARD (LIVE SIMULATOR) */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden shadow-md">
+                <motion.div 
+                  variants={cardVariants}
+                  className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden shadow-md"
+                >
                   <div className="absolute top-3 left-3 flex items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-lg text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" /> Realtime Simulator Loop
                   </div>
@@ -953,10 +981,13 @@ export default function App() {
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
 
                 {/* CARD C: CONSISTENCY STREAK TRACKER */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative overflow-hidden group shadow-md space-y-4">
+                <motion.div 
+                  variants={cardVariants}
+                  className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative overflow-hidden group shadow-md space-y-4"
+                >
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] text-emerald-500 uppercase tracking-widest font-black flex items-center gap-1.5 select-none">
                       <Sparkles className="w-3.5 h-3.5" /> Habits & Consistency
@@ -1110,7 +1141,7 @@ export default function App() {
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
               </div>
 
@@ -1118,7 +1149,10 @@ export default function App() {
               <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                 
                 {/* 1. EMISSION SOURCE CATEGORIC BREAKDOWN BAR CHARTS (spans cols 2) */}
-                <div className="md:col-span-2 bg-slate-900 border border-slate-880 p-6 rounded-3xl flex flex-col justify-between shadow-md">
+                <motion.div 
+                  variants={cardVariants}
+                  className="md:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between shadow-md"
+                >
                   <div>
                     <h3 className="font-display font-bold text-xl text-white mb-1 flex items-center gap-2">
                       <Activity className="w-5 h-5 text-emerald-400" /> Category Breakdown Intensity
@@ -1169,10 +1203,13 @@ export default function App() {
                     <span>Flight: International ~1.5 kg/mile, Domestic ~0.25 kg/mile</span>
                     <span>Gas commute auto ~0.36 kg/mile</span>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* 2. EMISSION FORECAST CARD (spans col 1) */}
-                <div className="bg-slate-900 border border-slate-880 p-6 rounded-3xl flex flex-col justify-between shadow-md">
+                <motion.div 
+                  variants={cardVariants}
+                  className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between shadow-md"
+                >
                   <div className="space-y-4">
                     <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold block">Future Forecast Panels</span>
                     
@@ -1209,10 +1246,13 @@ export default function App() {
                   <div className="mt-4 text-[10px] text-slate-500 leading-normal bg-slate-950/20 px-2 py-1 rounded">
                     Based on {userInputs.transportation} commuting & {userInputs.domesticFlights + userInputs.internationalFlights} yearly flights.
                   </div>
-                </div>
+                </motion.div>
 
                 {/* 3. FEATURED HIGH IMPACT RECOMMENDATION PANEL (spans col 1) */}
-                <div className="bg-emerald-500 border border-emerald-400 rounded-3xl p-6 flex flex-col justify-between text-slate-950 shadow-lg relative overflow-hidden">
+                <motion.div 
+                  variants={cardVariants}
+                  className="bg-emerald-500 border border-emerald-400 rounded-3xl p-6 flex flex-col justify-between text-slate-950 shadow-lg relative overflow-hidden"
+                >
                   <div className="absolute right-0 bottom-0 opacity-[0.03] pointer-events-none text-slate-950">
                     <Zap className="w-48 h-48" />
                   </div>
@@ -1249,14 +1289,17 @@ export default function App() {
                       {simulatedActions[0] ? "✓ Committed" : "Commit to Twin"}
                     </button>
                   </div>
-                </div>
+                </motion.div>
 
               </div>
 
             </div>
 
             {/* DIAGNOSTIC SUMMARY OR MOCK NOTICE */}
-            <div className="bg-slate-900 border border-slate-800 px-6 py-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-slate-300 shadow-md">
+            <motion.div 
+              variants={cardVariants}
+              className="bg-slate-900 border border-slate-800 px-6 py-4 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-slate-300 shadow-md"
+            >
               <div className="flex items-center gap-2">
                 <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
                 <p>
@@ -1280,10 +1323,13 @@ export default function App() {
                   </>
                 )}
               </button>
-            </div>
+            </motion.div>
 
             {/* SECOND ROW BENTO LABELS: INTERACTIVE SIMULATION MULTI-COLUMN ENGINE */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6 shadow-md">
+            <motion.div 
+              variants={cardVariants}
+              className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6 shadow-md"
+            >
               <div>
                 <div className="flex justify-between items-center flex-wrap gap-2">
                   <h3 className="font-display font-semibold text-lg text-white flex items-center gap-2">
@@ -1360,10 +1406,13 @@ export default function App() {
                   );
                 })}
               </div>
-            </div>
+            </motion.div>
 
             {/* TWIN ARCHIVAL SNAPSHOT LOG HISTORY COLLECTIONS */}
-            <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative shadow-md">
+            <motion.div 
+              variants={cardVariants}
+              className="bg-slate-900 border border-slate-800 p-6 rounded-3xl relative shadow-md"
+            >
               <h3 className="font-display font-semibold text-lg text-white mb-1 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-emerald-400" /> Chronological Twin History Logs
               </h3>
@@ -1418,9 +1467,9 @@ export default function App() {
                   ))}
                 </div>
               )}
-            </div>
+            </motion.div>
 
-          </div>
+          </motion.div>
         )}
 
         {/* TAB 2: SETUP PARAMETERS FORM */}
