@@ -1,17 +1,13 @@
 import React, { useState } from "react";
-import { auth, isMockFirebase } from "../lib/firebase";
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signInAnonymously
-} from "firebase/auth";
+import { loginWithEmail, registerWithEmail, loginAnonymously } from "../services/authService";
 import { Leaf, AlertCircle, ShieldAlert, KeyRound, UserPlus, Sparkles, Orbit } from "lucide-react";
+import { isMockFirebase } from "../lib/firebase";
 
 interface AuthScreenProps {
   onAuthSuccess: (user: { uid: string; email: string | null; displayName?: string }) => void;
 }
 
-export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+export function AuthScreen({ onAuthSuccess }: AuthScreenProps): React.JSX.Element {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
@@ -19,7 +15,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   // Fallback for mock sandbox environment
-  const handleLocalDemo = () => {
+  const handleLocalDemo = (): void => {
     onAuthSuccess({
       uid: "sandbox-guest-user-123",
       email: "guest@carbontwin.ai",
@@ -27,7 +23,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (!email || !password) {
       setError("Please fill in all standard credentials.");
@@ -36,66 +32,32 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     setError(null);
     setIsLoading(true);
 
-    if (isMockFirebase) {
-      // Offline local credential simulation for seamless sandbox testing
-      setTimeout(() => {
-        setIsLoading(false);
-        onAuthSuccess({
-          uid: `local-${email.replace(/[^a-zA-Z0-9]/g, "")}`,
-          email: email,
-          displayName: email.split("@")[0].toUpperCase(),
-        });
-      }, 800);
-      return;
-    }
-
     try {
       if (isSignUp) {
-        const credential = await createUserWithEmailAndPassword(auth, email, password);
-        onAuthSuccess({
-          uid: credential.user.uid,
-          email: credential.user.email,
-          displayName: email.split("@")[0],
-        });
+        const session = await registerWithEmail(email, password);
+        onAuthSuccess(session);
       } else {
-        const credential = await signInWithEmailAndPassword(auth, email, password);
-        onAuthSuccess({
-          uid: credential.user.uid,
-          email: credential.user.email,
-          displayName: credential.user.displayName || email.split("@")[0],
-        });
+        const session = await loginWithEmail(email, password);
+        onAuthSuccess(session);
       }
-    } catch (err: any) {
-      setError(err?.message || "Authentication attempt failed. Check connection.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "Authentication attempt failed. Check connection.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAnonymousAuth = async () => {
+  const handleAnonymousAuth = async (): Promise<void> => {
     setError(null);
     setIsLoading(true);
-    if (isMockFirebase) {
-      setTimeout(() => {
-        setIsLoading(false);
-        onAuthSuccess({
-          uid: "sandbox-anonymous-777",
-          email: "anonymous@carbontwin.ai",
-          displayName: "Eco Nomad",
-        });
-      }, 500);
-      return;
-    }
 
     try {
-      const credential = await signInAnonymously(auth);
-      onAuthSuccess({
-        uid: credential.user.uid,
-        email: "anonymous@carbontwin.ai",
-        displayName: "Anonymous Member",
-      });
-    } catch (err: any) {
-      setError(err?.message || "Failed to start anonymous session.");
+      const session = await loginAnonymously();
+      onAuthSuccess(session);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "Failed to start anonymous session.");
     } finally {
       setIsLoading(false);
     }

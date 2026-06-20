@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, Variants } from "motion/react";
 import { Activity, Calendar, Layers, Zap } from "lucide-react";
 import { UserInputs, CarbonTwinOutput } from "../../types";
 
@@ -14,7 +14,7 @@ interface ForecastViewProps {
   };
   simulatedActions: Record<number, boolean>;
   onToggleSimulation: (index: number) => void;
-  cardVariants: any;
+  cardVariants?: Variants;
 }
 
 export function ForecastView({

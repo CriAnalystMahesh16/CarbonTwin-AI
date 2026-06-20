@@ -1,12 +1,12 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, Variants } from "motion/react";
 import { Leaf, Award } from "lucide-react";
 import { UserInputs, CarbonTwinOutput } from "../../types";
 
 interface TwinProfileViewProps {
   userInputs: UserInputs;
   twinAnalysis: CarbonTwinOutput;
-  cardVariants: any;
+  cardVariants?: Variants;
 }
 
 export function TwinProfileView({ userInputs, twinAnalysis, cardVariants }: TwinProfileViewProps) {

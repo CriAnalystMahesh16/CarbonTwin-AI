@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
 import firebaseConfig from "../../firebase-applet-config.json";
 
 export enum OperationType {
@@ -36,8 +36,8 @@ export const isMockFirebase =
   firebaseConfig.projectId === "mock-project-id";
 
 let app;
-let dbInstance: any = null;
-let authInstance: any = null;
+let dbInstance: Firestore | null = null;
+let authInstance: Auth | null = null;
 
 try {
   if (!isMockFirebase) {

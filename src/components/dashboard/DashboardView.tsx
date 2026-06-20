@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, Variants } from "motion/react";
 import { TwinProfileView } from "./TwinProfileView";
 import { ForecastView } from "./ForecastView";
 import { UserInputs, CarbonTwinOutput } from "../../types";
@@ -15,7 +15,7 @@ interface DashboardViewProps {
   };
   simulatedActions: Record<number, boolean>;
   onToggleSimulation: (index: number) => void;
-  cardVariants: any;
+  cardVariants?: Variants;
 }
 
 export function DashboardView({
